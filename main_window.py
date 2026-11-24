@@ -251,11 +251,11 @@ class MainWindow(QMainWindow):
         heading.addWidget(self.record_position)
         self.previous_button = QPushButton("‹")
         self.previous_button.setFixedWidth(34)
-        self.previous_button.clicked.connect(lambda: self._move_invoice(-1))
+        self.previous_button.clicked.connect(lambda: self._move_invoice(+1))
         heading.addWidget(self.previous_button)
         self.next_button = QPushButton("›")
         self.next_button.setFixedWidth(34)
-        self.next_button.clicked.connect(lambda: self._move_invoice(1))
+        self.next_button.clicked.connect(lambda: self._move_invoice(-1))
         heading.addWidget(self.next_button)
         page_layout.addLayout(heading)
 
@@ -1009,6 +1009,7 @@ class MainWindow(QMainWindow):
 
     def _move_invoice(self, offset: int) -> None:
         if not self._confirm_pending_changes():
+            QMessageBox.critical(self, "_move_invoice", f"Fallo al mover el invoice ::{self._confirm_pending_changes()}")
             return
         invoices = self.database.list_invoices()
         ids = [invoice.id for invoice in invoices]
@@ -1187,6 +1188,9 @@ class MainWindow(QMainWindow):
 
     def _create_credit_note(self) -> None:
         if self.current_invoice.id is None:
+            QMessageBox.warning(
+                self, "_create_credit_note", f"self.current_invoice.id: {self.current_invoice.id}."
+            )
             return
         try:
             document = self.database.create_credit_note(self.current_invoice.id)
