@@ -5,7 +5,7 @@ import html
 import sqlite3
 from collections import defaultdict
 
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, Qt, QSize
 from PySide6.QtGui import QTextDocument
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrinter
 from PySide6.QtWidgets import (
@@ -241,8 +241,9 @@ class MainWindow(QMainWindow):
         heading.addWidget(QLabel("/"))
         self.invoice_sequence = QLabel("")
         heading.addWidget(self.invoice_sequence)
+        heading.addStretch(1)
         self.payments_button = QPushButton("Payments\n0")
-        self.payments_button.setFixedHeight(42)
+        self.payments_button.setFixedHeight(45)
         self.payments_button.clicked.connect(self._show_payments)
         heading.addWidget(self.payments_button)
         heading.addStretch(1)
@@ -422,10 +423,12 @@ class MainWindow(QMainWindow):
         line_actions = QHBoxLayout()
         self.add_line_button = QPushButton("Add a line")
         self.add_line_button.setObjectName("linkButton")
+        self.add_line_button.setStyleSheet("background-color: rgb(255, 71, 71);")
         self.add_line_button.clicked.connect(self._add_line)
         line_actions.addWidget(self.add_line_button)
         self.remove_line_button = QPushButton("Remove selected")
         self.remove_line_button.setObjectName("linkButton")
+        self.remove_line_button.setStyleSheet("background-color: rgb(71, 255, 71);")
         self.remove_line_button.clicked.connect(self._remove_line)
         line_actions.addWidget(self.remove_line_button)
         line_actions.addStretch(1)
@@ -1021,6 +1024,7 @@ class MainWindow(QMainWindow):
 
     def _add_line(self) -> None:
         lines = self._read_lines()
+        print("_add_line::", lines)
         lines.append(InvoiceLine())
         self._populate_lines(lines)
         self._mark_dirty()
@@ -1161,6 +1165,7 @@ class MainWindow(QMainWindow):
 
     def _show_payments(self) -> None:
         if self.current_invoice.id is None:
+            QMessageBox.critical(self, "_show_payments", f"Fallo al cargar el payment: {self.current_invoice}")
             return
         payments = self.database.list_payments(self.current_invoice.id)
         dialog = QDialog(self)
@@ -1168,6 +1173,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(dialog)
         table = self._data_table(["Date", "Method", "Reference", "Amount"])
         table.setRowCount(len(payments))
+        print("_show_payments: ", payments)
         for row, payment in enumerate(payments):
             self._set_cell(table, row, 0, payment.payment_date)
             self._set_cell(table, row, 1, payment.method)
