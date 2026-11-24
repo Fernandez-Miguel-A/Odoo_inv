@@ -5,8 +5,16 @@ import html
 import sqlite3
 from collections import defaultdict
 
-from PySide6.QtCore import QDate, Qt, QSize
-from PySide6.QtGui import QTextDocument
+from PySide6.QtCore import QDate, Qt, QSize, QRectF
+from PySide6.QtGui import (
+    QColor,
+    QPaintEvent,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QTextDocument,
+    QPen
+)
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrinter
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -50,6 +58,78 @@ def money(amount: float, currency: str) -> str:
     symbol, factor = CURRENCY_SYMBOLS.get(currency, currency)
     prefix = "-" if amount < 0 else ""
     return f"{prefix}{symbol} {abs(amount*factor):,.2f}"
+
+
+class InvoiceStatusIndicator(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self._status = "Draft"
+        self.setFixedSize(126, 30)
+        self.setAccessibleName("Invoice status")
+
+    def set_status(self, status: str) -> None:
+        self._status = status
+        self.setAccessibleDescription(status)
+        self.update()
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        width = float(self.width()) - 1
+        height = float(self.height()) - 1
+        split = 53.0
+        tip = 10.0
+        midpoint = height / 2
+        active = QColor("#62b9b3")
+        inactive_border = QColor("#dfe3e8")
+        inactive_fill = QColor("#e9ebee")
+        active_fill = QColor("#749eff")
+
+        draft_path = QPainterPath()
+        draft_path.moveTo(0.5, 0.5)
+        draft_path.lineTo(split, 0.5)
+        draft_path.lineTo(split + tip, midpoint)
+        draft_path.lineTo(split, height + 0.5)
+        draft_path.lineTo(0.5, height + 0.5)
+        draft_path.closeSubpath()
+
+        current_path = QPainterPath()
+        current_path.moveTo(split, 0.5)
+        current_path.lineTo(width, 0.5)
+        current_path.lineTo(width, height + 0.5)
+        current_path.lineTo(split, height + 0.5)
+        current_path.lineTo(split + tip, midpoint)
+        current_path.closeSubpath()
+
+        draft_active = self._status == "Draft"
+        p = QPen("#3e41ff")
+        p.setWidth(2)
+        painter.setPen(p)
+        painter.setBrush(active_fill if draft_active else inactive_fill)
+        painter.drawPath(draft_path)
+        painter.setBrush(inactive_fill if draft_active else active_fill)
+        painter.drawPath(current_path)
+
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.setPen(QPen(active if draft_active else inactive_border, 1))
+        painter.drawPath(draft_path)
+        painter.setPen(QPen(inactive_border if draft_active else active, 1))
+        painter.drawPath(current_path)
+
+        painter.setPen(QColor("#333943" if draft_active else "#68707b"))
+        painter.drawText(
+            QRectF(2, 0, split - 6, height),
+            Qt.AlignmentFlag.AlignCenter,
+            "Draft",
+        )
+        current_status = self._status if self._status != "Draft" else "Posted"
+        painter.setPen(QColor("#68707b" if draft_active else "#333943"))
+        painter.drawText(
+            QRectF(split + tip, 0, width - split - tip, height),
+            Qt.AlignmentFlag.AlignCenter,
+            current_status,
+        )
 
 
 class MainWindow(QMainWindow):
@@ -99,6 +179,11 @@ class MainWindow(QMainWindow):
                 border: 1px solid #dfe3e8;
                 border-radius: 5px;
             }
+            QFrame#actionBar {
+                background: #ffffff;
+                border: 1px solid #e1e4e8;
+                border-radius: 4px;
+            }
             QLabel#appMark {
                 color: #ffffff;
                 background: #168bd2;
@@ -119,13 +204,35 @@ class MainWindow(QMainWindow):
             }
             QPushButton:hover { background: #e7eaee; }
             QPushButton:disabled { color: #a7adb7; background: #f4f5f7; }
+            QPushButton#actionButton {
+                color: #343943;
+                background: #e9ebee;
+                border: 1px solid #dfe3e8;
+                border-radius: 4px;
+                padding: 3px 10px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+            QPushButton#actionButton:hover { background: #dfe2e6; }
+            QPushButton#actionButton:disabled {
+                color: #a7adb7;
+                background: #f4f5f7;
+                border-color: #e8eaed;
+            }
             QPushButton#primaryButton {
                 color: #ffffff;
                 background: #714b67;
                 border-color: #714b67;
                 font-weight: 600;
+                padding: 3px 10px;
+                font-size: 12px;
             }
             QPushButton#primaryButton:hover { background: #5e3d55; }
+            QPushButton#primaryButton:disabled {
+                color: #e5dfe3;
+                background: #a58c9d;
+                border-color: #a58c9d;
+            }
             QPushButton#navButton {
                 background: transparent;
                 border: none;
@@ -172,13 +279,6 @@ class MainWindow(QMainWindow):
             QLabel#sectionTitle { font-size: 22px; font-weight: 600; }
             QLabel#muted { color: #707782; }
             QLabel#totalLabel { font-size: 17px; font-weight: 700; }
-            QLabel#statusBadge {
-                border: 1px solid #a9d8d6;
-                border-radius: 4px;
-                color: #087c86;
-                font-weight: 600;
-                padding: 6px 12px;
-            }
             QLabel#statValue { color: #714b67; font-size: 23px; font-weight: 700; }
         """
 
@@ -260,7 +360,11 @@ class MainWindow(QMainWindow):
         heading.addWidget(self.next_button)
         page_layout.addLayout(heading)
 
-        action_row = QHBoxLayout()
+        action_bar = QFrame()
+        action_bar.setObjectName("actionBar")
+        action_row = QHBoxLayout(action_bar)
+        action_row.setContentsMargins(8, 4, 8, 4)
+        action_row.setSpacing(6)
         self.print_send_button = QPushButton("Print & Send")
         self.print_send_button.setObjectName("primaryButton")
         self.print_send_button.setToolTip(
@@ -269,25 +373,38 @@ class MainWindow(QMainWindow):
         self.print_send_button.clicked.connect(self._print_and_send)
         action_row.addWidget(self.print_send_button)
         self.pay_button = QPushButton("Pay")
+        self.pay_button.setObjectName("actionButton")
         self.pay_button.clicked.connect(self._pay_invoice)
         action_row.addWidget(self.pay_button)
         self.preview_button = QPushButton("Preview")
+        self.preview_button.setObjectName("actionButton")
         self.preview_button.clicked.connect(self._preview_invoice)
         action_row.addWidget(self.preview_button)
         self.credit_note_button = QPushButton("Credit Note")
+        self.credit_note_button.setObjectName("actionButton")
         self.credit_note_button.clicked.connect(self._create_credit_note)
         action_row.addWidget(self.credit_note_button)
         self.reset_button = QPushButton("Reset to Draft")
+        self.reset_button.setObjectName("actionButton")
         self.reset_button.clicked.connect(self._reset_to_draft)
         action_row.addWidget(self.reset_button)
         self.save_button = QPushButton("Save")
+        self.save_button.setObjectName("actionButton")
         self.save_button.clicked.connect(self._save_current)
         action_row.addWidget(self.save_button)
         action_row.addStretch(1)
-        self.status_badge = QLabel("DRAFT")
-        self.status_badge.setObjectName("statusBadge")
+        self.status_badge = InvoiceStatusIndicator()
         action_row.addWidget(self.status_badge)
-        page_layout.addLayout(action_row)
+        for button in (
+            self.print_send_button,
+            self.pay_button,
+            self.preview_button,
+            self.credit_note_button,
+            self.reset_button,
+            self.save_button,
+        ):
+            button.setFixedHeight(28)
+        page_layout.addWidget(action_bar)
 
         card = QFrame()
         card.setObjectName("invoiceCard")
@@ -918,14 +1035,7 @@ class MainWindow(QMainWindow):
             if self.current_invoice.is_credit_note
             else "Credit Note"
         )
-        self.status_badge.setText(status.upper())
-        self.status_badge.setStyleSheet(
-            "color: #087c86; border: 1px solid #a9d8d6; border-radius: 4px; "
-            "font-weight: 600; padding: 6px 12px;"
-            if status != "Draft"
-            else "color: #68707b; border: 1px solid #d6d9df; border-radius: 4px; "
-            "font-weight: 600; padding: 6px 12px;"
-        )
+        self.status_badge.set_status(status)
         self.pay_button.setEnabled(status == "Posted" and self.current_invoice.amount_due > 0)
         self.credit_note_button.setEnabled(
             self.current_invoice.id is not None
