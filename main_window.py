@@ -895,6 +895,7 @@ class MainWindow(QMainWindow):
 
     def _collect_invoice(self) -> Invoice:
         invoice = copy.deepcopy(self.current_invoice)
+        print("\n\n _collect_invoice", invoice.id)
         invoice.customer = self.customer_edit.text().strip()
         invoice.address = self.address_edit.toPlainText().strip()
         invoice.email = self.email_edit.text().strip()
@@ -909,6 +910,11 @@ class MainWindow(QMainWindow):
 
     def _update_invoice_actions(self) -> None:
         status = self.current_invoice.status
+        self.credit_note_button.setText(
+            "Reverse Credit Note"
+            if self.current_invoice.is_credit_note
+            else "Credit Note"
+        )
         self.status_badge.setText(status.upper())
         self.status_badge.setStyleSheet(
             "color: #087c86; border: 1px solid #a9d8d6; border-radius: 4px; "
@@ -921,7 +927,6 @@ class MainWindow(QMainWindow):
         self.credit_note_button.setEnabled(
             self.current_invoice.id is not None
             and status in ("Posted", "Paid")
-            and not self.current_invoice.is_credit_note
         )
         self.reset_button.setEnabled(status == "Posted")
         self.save_button.setEnabled(status == "Draft")
@@ -1184,13 +1189,18 @@ class MainWindow(QMainWindow):
         if self.current_invoice.id is None:
             return
         try:
-            note = self.database.create_credit_note(self.current_invoice.id)
+            document = self.database.create_credit_note(self.current_invoice.id)
         except (ValueError, sqlite3.Error) as error:
-            QMessageBox.critical(self, "Could not create credit note", str(error))
+            QMessageBox.critical(self, "Could not create credit document", str(error))
             return
-        self._show_invoice(note)
+        self._show_invoice(document)
         self._refresh_pages()
-        self.statusBar().showMessage(f"Credit note {note.number} created.", 5000)
+        message = (
+            f"Credit note {document.number} created."
+            if document.is_credit_note
+            else f"Credit note reversed by {document.number}."
+        )
+        self.statusBar().showMessage(message, 5000)
 
     def _reset_to_draft(self) -> None:
         if self.current_invoice.id is None:

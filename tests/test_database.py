@@ -87,6 +87,21 @@ class InvoiceDatabaseTests(unittest.TestCase):
         self.assertEqual(note.total, -source.total)
         self.assertEqual(note.number.split("/")[0], "CN")
 
+    def test_credit_note_can_be_reversed_into_positive_invoice(self) -> None:
+        source = self.database.list_invoices()[0]
+        credit_note = self.database.create_credit_note(source.id)
+        credit_note.status = "Posted"
+        self.database.save_invoice(credit_note)
+
+        reversal = self.database.create_credit_note(credit_note.id)
+        saved_reversal = self.database.get_invoice(reversal.id)
+
+        self.assertFalse(saved_reversal.is_credit_note)
+        self.assertEqual(saved_reversal.total, source.total)
+        self.assertEqual(saved_reversal.reference, credit_note.number)
+        self.assertEqual(saved_reversal.source_invoice_id, credit_note.id)
+        self.assertEqual(saved_reversal.number.split("/")[0], "INV")
+
     def test_posted_invoice_can_be_reset_to_draft(self) -> None:
         invoice = self.database.list_invoices()[0]
 

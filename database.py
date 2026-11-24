@@ -354,8 +354,11 @@ class InvoiceDatabase:
     def create_credit_note(self, invoice_id: int) -> Invoice:
         source = self.get_invoice(invoice_id)
         if source.status == "Draft":
-            raise ValueError("Post the invoice before creating a credit note.")
-        note = Invoice(
+            raise ValueError(
+                "Post the source document before creating a credit note or reversal."
+            )
+        is_reversal = source.is_credit_note
+        document = Invoice(
             customer=source.customer,
             address=source.address,
             email=source.email,
@@ -364,8 +367,12 @@ class InvoiceDatabase:
             payment_terms="Immediate",
             currency=source.currency,
             reference=source.number,
-            notes=f"Credit note for {source.number}",
-            is_credit_note=True,
+            notes=(
+                f"Reversal of credit note {source.number}"
+                if is_reversal
+                else f"Credit note for {source.number}"
+            ),
+            is_credit_note=not is_reversal,
             source_invoice_id=source.id,
             lines=[
                 InvoiceLine(
@@ -379,7 +386,7 @@ class InvoiceDatabase:
                 for line in source.lines
             ],
         )
-        return self.save_invoice(note)
+        return self.save_invoice(document)
 
     def get_setting(self, key: str, default: str = "") -> str:
         with self._connection() as connection:
