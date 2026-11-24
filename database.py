@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import date
@@ -10,13 +9,16 @@ from typing import Iterator
 from Odoo_inv.models import Invoice, InvoiceLine, Payment
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_DATABASE_PATH = PROJECT_ROOT / "data" / "invoices.sqlite3"
+
+
 class InvoiceDatabase:
     """SQLite persistence for invoices and their payment history."""
 
     def __init__(self, path: str | Path | None = None) -> None:
         if path is None:
-            data_root = Path(os.environ.get("LOCALAPPDATA", Path.home()))
-            path = data_root / "Odoo_inv" / "invoices.sqlite3"
+            path = DEFAULT_DATABASE_PATH
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()

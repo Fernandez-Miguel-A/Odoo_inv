@@ -4,11 +4,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from Odoo_inv.database import InvoiceDatabase
+from Odoo_inv.database import DEFAULT_DATABASE_PATH, InvoiceDatabase
 from Odoo_inv.models import Invoice, InvoiceLine
 
 
 class InvoiceDatabaseTests(unittest.TestCase):
+    def test_default_database_is_inside_project_data_directory(self) -> None:
+        project_root = Path(__file__).resolve().parent.parent
+        self.assertEqual(
+            DEFAULT_DATABASE_PATH,
+            project_root / "data" / "invoices.sqlite3",
+        )
+
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.database = InvoiceDatabase(

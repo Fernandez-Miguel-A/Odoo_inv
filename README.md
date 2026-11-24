@@ -24,8 +24,9 @@ python -m pip install -r requirements.txt
 python -m Odoo_inv
 ```
 
-La aplicación guarda sus datos en `%LOCALAPPDATA%\Odoo_inv\invoices.sqlite3`
-(o en `~/Odoo_inv/invoices.sqlite3` si `LOCALAPPDATA` no está definido).
+La aplicación guarda sus datos exclusivamente en
+`data/invoices.sqlite3`, dentro de la raíz de este proyecto. Esta ruta no depende
+de `LOCALAPPDATA` ni del directorio personal del usuario.
 
 ## Pruebas
 
