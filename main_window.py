@@ -37,14 +37,19 @@ from Odoo_inv.database import InvoiceDatabase
 from Odoo_inv.models import Invoice, InvoiceLine
 
 
-CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£"}
+CURRENCY_SYMBOLS = {
+    "EUR": ["€", 1.0],
+    "USD": ["$", 1.091],
+    "GBP": ["£", 0.8367],
+    "ARGs": ["$", 1724.0],
+}
 TERM_DAYS = {"Immediate": 0, "15 Days": 15, "30 Days": 30, "45 Days": 45}
 
 
 def money(amount: float, currency: str) -> str:
-    symbol = CURRENCY_SYMBOLS.get(currency, currency)
+    symbol, factor = CURRENCY_SYMBOLS.get(currency, currency)
     prefix = "-" if amount < 0 else ""
-    return f"{prefix}{symbol} {abs(amount):,.2f}"
+    return f"{prefix}{symbol} {abs(amount*factor):,.2f}"
 
 
 class MainWindow(QMainWindow):
@@ -350,7 +355,7 @@ class MainWindow(QMainWindow):
         currency_label.setObjectName("muted")
         details.addWidget(currency_label, 3, 2)
         self.currency_combo = QComboBox()
-        self.currency_combo.addItems(["EUR", "USD", "GBP"])
+        self.currency_combo.addItems(["EUR", "USD", "GBP", "ARGs"])
         self.currency_combo.currentTextChanged.connect(self._mark_dirty)
         details.addWidget(self.currency_combo, 3, 3)
         card_layout.addLayout(details)
