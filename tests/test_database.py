@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
-from Odoo_inv.database import DEFAULT_DATABASE_PATH, InvoiceDatabase
-from Odoo_inv.models import Invoice, InvoiceLine
+from ..database import DEFAULT_DATABASE_PATH, InvoiceDatabase
+from ..models import Invoice, InvoiceLine, Vendor
 
 
 class InvoiceDatabaseTests(unittest.TestCase):
@@ -108,6 +109,57 @@ class InvoiceDatabaseTests(unittest.TestCase):
         self.database.reset_to_draft(invoice.id)
 
         self.assertEqual(self.database.get_invoice(invoice.id).status, "Draft")
+
+    def test_vendor_details_round_trip_and_archive_filter(self) -> None:
+        vendor = Vendor(
+            name="Northwind Supplies",
+            contact_name="Morgan Lee",
+            email="accounts@northwind.example",
+            phone="+1 555 0100",
+            tax_id="NW-1024",
+            address="12 Market Street\nSpringfield",
+            payment_terms="45 Days",
+            currency="USD",
+            notes="Deliveries before noon",
+        )
+
+        self.database.save_vendor(vendor)
+        loaded = self.database.get_vendor(vendor.id)
+
+        self.assertEqual(loaded.id, vendor.id)
+        self.assertEqual(loaded.name, vendor.name)
+        self.assertEqual(loaded.contact_name, vendor.contact_name)
+        self.assertEqual(loaded.email, vendor.email)
+        self.assertEqual(loaded.phone, vendor.phone)
+        self.assertEqual(loaded.tax_id, vendor.tax_id)
+        self.assertEqual(loaded.address, vendor.address)
+        self.assertEqual(loaded.payment_terms, vendor.payment_terms)
+        self.assertEqual(loaded.currency, vendor.currency)
+        self.assertEqual(loaded.notes, vendor.notes)
+        self.database.set_vendor_archived(vendor.id, archived=True)
+        self.assertEqual(self.database.list_vendors(include_archived=False), [])
+        self.assertFalse(self.database.list_vendors()[0].is_active)
+
+        self.database.set_vendor_archived(vendor.id, archived=False)
+        self.assertTrue(self.database.list_vendors(include_archived=False)[0].is_active)
+
+    def test_vendor_names_are_required_and_case_insensitively_unique(self) -> None:
+        with self.assertRaises(ValueError):
+            self.database.save_vendor(Vendor(name="  "))
+
+        self.database.save_vendor(Vendor(name="Northwind Supplies"))
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.database.save_vendor(Vendor(name="northwind supplies"))
+
+    def test_vendor_updates_preserve_id_and_reject_missing_records(self) -> None:
+        vendor = self.database.save_vendor(Vendor(name="Northwind Supplies"))
+        vendor.phone = "+1 555 0199"
+
+        self.database.save_vendor(vendor)
+
+        self.assertEqual(self.database.get_vendor(vendor.id).phone, "+1 555 0199")
+        with self.assertRaises(KeyError):
+            self.database.save_vendor(Vendor(id=999, name="Missing Vendor"))
 
 
 if __name__ == "__main__":

@@ -72,3 +72,18 @@ class Payment:
     method: str
     payment_date: str
     reference: str
+
+
+@dataclass(slots=True)
+class Vendor:
+    id: int | None = None
+    name: str = ""
+    contact_name: str = ""
+    email: str = ""
+    phone: str = ""
+    tax_id: str = ""
+    address: str = ""
+    payment_terms: str = "30 Days"
+    currency: str = "EUR"
+    notes: str = ""
+    is_active: bool = True

@@ -4,8 +4,8 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from Odoo_inv.database import InvoiceDatabase
-from Odoo_inv.main_window import MainWindow
+from .database import InvoiceDatabase
+from .main_window import MainWindow
 
 
 def main() -> int:

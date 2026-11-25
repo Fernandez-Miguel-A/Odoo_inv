@@ -41,8 +41,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from database import InvoiceDatabase
-from models import Invoice, InvoiceLine
+if __package__:
+    from .database import InvoiceDatabase
+    from .models import Invoice, InvoiceLine, Vendor
+else:
+    from database import InvoiceDatabase
+    from models import Invoice, InvoiceLine, Vendor
 
 
 CURRENCY_SYMBOLS = {
@@ -619,17 +623,92 @@ class MainWindow(QMainWindow):
 
     def _build_vendors_page(self) -> None:
         page, layout = self._page_container(
-            "Vendors", "Vendor management is outside this customer invoicing starter."
+            "Vendors",
+            "Maintain supplier contacts, tax details, payment terms and preferred currency.",
         )
-        message = QLabel(
-            "This version is focused on customer invoices, matching the reference "
-            "screen. Vendor bills and vendor records are not included yet."
+
+        summary = QHBoxLayout()
+        self.vendor_active_card = self._stat_card("Active suppliers", "0")
+        self.vendor_archived_card = self._stat_card("Archived suppliers", "0")
+        self.vendor_currency_card = self._stat_card("Currencies in use", "0")
+        summary.addWidget(self.vendor_active_card)
+        summary.addWidget(self.vendor_archived_card)
+        summary.addWidget(self.vendor_currency_card)
+        layout.addLayout(summary)
+
+        toolbar = QHBoxLayout()
+        self.vendor_search = QLineEdit()
+        self.vendor_search.setPlaceholderText(
+            "Search supplier, contact, email, phone, tax ID or address"
         )
-        message.setWordWrap(True)
-        message.setObjectName("muted")
-        message.setMaximumWidth(620)
-        layout.addWidget(message)
-        layout.addStretch(1)
+        self.vendor_search.setClearButtonEnabled(True)
+        self.vendor_search.textChanged.connect(self._refresh_vendors)
+        toolbar.addWidget(self.vendor_search, 1)
+
+        self.vendor_status_filter = QComboBox()
+        self.vendor_status_filter.addItems(
+            ["Active suppliers", "Archived suppliers", "All suppliers"]
+        )
+        self.vendor_status_filter.currentTextChanged.connect(self._refresh_vendors)
+        toolbar.addWidget(self.vendor_status_filter)
+        layout.addLayout(toolbar)
+
+        actions = QHBoxLayout()
+        self.add_vendor_button = QPushButton("New Vendor")
+        self.add_vendor_button.setObjectName("primaryButton")
+        self.add_vendor_button.clicked.connect(self._create_vendor)
+        actions.addWidget(self.add_vendor_button)
+        self.edit_vendor_button = QPushButton("Edit")
+        self.edit_vendor_button.clicked.connect(self._edit_selected_vendor)
+        self.edit_vendor_button.setEnabled(False)
+        actions.addWidget(self.edit_vendor_button)
+        self.archive_vendor_button = QPushButton("Archive")
+        self.archive_vendor_button.clicked.connect(self._toggle_vendor_archive)
+        self.archive_vendor_button.setEnabled(False)
+        actions.addWidget(self.archive_vendor_button)
+        actions.addStretch(1)
+        self.vendors_result_label = QLabel("")
+        self.vendors_result_label.setObjectName("muted")
+        actions.addWidget(self.vendors_result_label)
+        layout.addLayout(actions)
+
+        self.vendors_table = self._data_table(
+            [
+                "Supplier",
+                "Contact",
+                "Email",
+                "Phone",
+                "Tax ID",
+                "Payment Terms",
+                "Currency",
+                "Status",
+            ]
+        )
+        self.vendors_table.setColumnWidth(0, 180)
+        self.vendors_table.setColumnWidth(1, 150)
+        self.vendors_table.setColumnWidth(2, 190)
+        self.vendors_table.setColumnWidth(3, 125)
+        self.vendors_table.setColumnWidth(4, 125)
+        self.vendors_table.setColumnWidth(5, 120)
+        self.vendors_table.setColumnWidth(6, 80)
+        self.vendors_table.itemSelectionChanged.connect(
+            self._vendor_selection_changed
+        )
+        self.vendors_table.cellDoubleClicked.connect(
+            lambda _row, _column: self._edit_selected_vendor()
+        )
+        layout.addWidget(self.vendors_table, 1)
+
+        self.vendors_empty_label = QLabel(
+            "No suppliers yet. Add a vendor to keep their business and payment "
+            "details together."
+        )
+        self.vendors_empty_label.setObjectName("muted")
+        self.vendors_empty_label.setWordWrap(True)
+        self.vendors_empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.vendors_empty_label)
+        self.vendors_empty_label.hide()
+        self._vendors_by_id: dict[int, Vendor] = {}
         self.pages.addWidget(page)
 
     def _build_reporting_page(self) -> None:
@@ -719,6 +798,217 @@ class MainWindow(QMainWindow):
         self._refresh_dashboard(invoices)
         self._refresh_customers(invoices)
         self._refresh_reporting(invoices)
+        self._refresh_vendors()
+
+    def _refresh_vendors(self, *_args: object) -> None:
+        vendors = self.database.list_vendors()
+        active = [vendor for vendor in vendors if vendor.is_active]
+        archived = [vendor for vendor in vendors if not vendor.is_active]
+        self._set_vendor_stat(self.vendor_active_card, str(len(active)))
+        self._set_vendor_stat(self.vendor_archived_card, str(len(archived)))
+        self._set_vendor_stat(
+            self.vendor_currency_card,
+            str(len({vendor.currency for vendor in active})),
+        )
+
+        status_filter = self.vendor_status_filter.currentText()
+        if status_filter == "Active suppliers":
+            candidates = active
+        elif status_filter == "Archived suppliers":
+            candidates = archived
+        else:
+            candidates = vendors
+
+        query = self.vendor_search.text().strip().casefold()
+        visible = [
+            vendor
+            for vendor in candidates
+            if not query
+            or query
+            in " ".join(
+                (
+                    vendor.name,
+                    vendor.contact_name,
+                    vendor.email,
+                    vendor.phone,
+                    vendor.tax_id,
+                    vendor.address,
+                    vendor.payment_terms,
+                    vendor.currency,
+                    vendor.notes,
+                )
+            ).casefold()
+        ]
+        self._vendors_by_id = {
+            vendor.id: vendor for vendor in vendors if vendor.id is not None
+        }
+        self.vendors_table.setRowCount(len(visible))
+        for row, vendor in enumerate(visible):
+            values = (
+                vendor.name,
+                vendor.contact_name or "—",
+                vendor.email or "—",
+                vendor.phone or "—",
+                vendor.tax_id or "—",
+                vendor.payment_terms,
+                vendor.currency,
+                "Active" if vendor.is_active else "Archived",
+            )
+            for column, value in enumerate(values):
+                self._set_cell(self.vendors_table, row, column, value)
+            item = self.vendors_table.item(row, 0)
+            if item is not None:
+                item.setData(Qt.ItemDataRole.UserRole, vendor.id)
+
+        self.vendors_result_label.setText(
+            f"{len(visible)} of {len(candidates)} supplier(s)"
+        )
+        self.vendors_empty_label.setText(
+            "No suppliers yet. Add a vendor to keep their business and payment "
+            "details together."
+            if not vendors
+            else "No suppliers match this search and status filter."
+        )
+        self.vendors_empty_label.setVisible(not visible)
+        self._vendor_selection_changed()
+
+    @staticmethod
+    def _set_vendor_stat(card: QFrame, value: str) -> None:
+        card_layout = card.layout()
+        if card_layout is None:
+            return
+        value_item = card_layout.itemAt(1)
+        if value_item is None:
+            return
+        value_label = value_item.widget()
+        if isinstance(value_label, QLabel):
+            value_label.setText(value)
+
+    def _selected_vendor(self) -> Vendor | None:
+        row = self.vendors_table.currentRow()
+        if row < 0:
+            return None
+        item = self.vendors_table.item(row, 0)
+        if item is None:
+            return None
+        vendor_id = item.data(Qt.ItemDataRole.UserRole)
+        return self._vendors_by_id.get(vendor_id)
+
+    def _vendor_selection_changed(self) -> None:
+        vendor = self._selected_vendor()
+        self.edit_vendor_button.setEnabled(vendor is not None)
+        self.archive_vendor_button.setEnabled(vendor is not None)
+        self.archive_vendor_button.setText(
+            "Archive" if vendor is not None and vendor.is_active else "Restore"
+        )
+
+    def _create_vendor(self) -> None:
+        self._edit_vendor_dialog()
+
+    def _edit_selected_vendor(self) -> None:
+        vendor = self._selected_vendor()
+        if vendor is not None:
+            self._edit_vendor_dialog(vendor)
+
+    def _edit_vendor_dialog(self, vendor: Vendor | None = None) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("New Vendor" if vendor is None else f"Edit · {vendor.name}")
+        form = QFormLayout(dialog)
+        form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
+        name = QLineEdit(vendor.name if vendor is not None else "")
+        name.setPlaceholderText("Legal or trading name")
+        contact = QLineEdit(vendor.contact_name if vendor is not None else "")
+        email = QLineEdit(vendor.email if vendor is not None else "")
+        email.setPlaceholderText("accounts@supplier.com")
+        phone = QLineEdit(vendor.phone if vendor is not None else "")
+        tax_id = QLineEdit(vendor.tax_id if vendor is not None else "")
+        address = QTextEdit(vendor.address if vendor is not None else "")
+        address.setPlaceholderText("Street, city, region and country")
+        address.setMaximumHeight(82)
+        payment_terms = QComboBox()
+        payment_terms.addItems(["Immediate", "15 Days", "30 Days", "45 Days"])
+        currency = QComboBox()
+        currency.addItems(list(CURRENCY_SYMBOLS))
+        notes = QTextEdit(vendor.notes if vendor is not None else "")
+        notes.setPlaceholderText("Internal notes, delivery preferences or reminders")
+        notes.setMaximumHeight(90)
+
+        form.addRow("Supplier name *", name)
+        form.addRow("Contact person", contact)
+        form.addRow("Email", email)
+        form.addRow("Phone", phone)
+        form.addRow("Tax / registration ID", tax_id)
+        form.addRow("Address", address)
+        form.addRow("Payment terms", payment_terms)
+        form.addRow("Preferred currency", currency)
+        form.addRow("Internal notes", notes)
+        if vendor is not None:
+            payment_terms.setCurrentText(vendor.payment_terms)
+            currency.setCurrentText(vendor.currency)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+
+        def accept_if_valid() -> None:
+            if not name.text().strip():
+                QMessageBox.warning(dialog, "Supplier name required", "Enter a supplier name.")
+                name.setFocus()
+                return
+            dialog.accept()
+
+        buttons.accepted.connect(accept_if_valid)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        dialog.setMinimumWidth(520)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        saved_vendor = Vendor(
+            id=vendor.id if vendor is not None else None,
+            name=name.text(),
+            contact_name=contact.text(),
+            email=email.text(),
+            phone=phone.text(),
+            tax_id=tax_id.text(),
+            address=address.toPlainText(),
+            payment_terms=payment_terms.currentText(),
+            currency=currency.currentText(),
+            notes=notes.toPlainText(),
+            is_active=vendor.is_active if vendor is not None else True,
+        )
+        try:
+            self.database.save_vendor(saved_vendor)
+        except (ValueError, sqlite3.Error, KeyError) as error:
+            QMessageBox.critical(self, "Could not save vendor", str(error))
+            return
+        self._refresh_vendors()
+        self.statusBar().showMessage(f"{saved_vendor.name} saved.", 4000)
+
+    def _toggle_vendor_archive(self) -> None:
+        vendor = self._selected_vendor()
+        if vendor is None or vendor.id is None:
+            return
+        action = "restore" if not vendor.is_active else "archive"
+        answer = QMessageBox.question(
+            self,
+            f"{action.title()} vendor",
+            f"{action.title()} {vendor.name}? "
+            "Archived suppliers remain available in the archived filter.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self.database.set_vendor_archived(vendor.id, vendor.is_active)
+        except (sqlite3.Error, KeyError) as error:
+            QMessageBox.critical(self, "Could not update vendor", str(error))
+            return
+        self._refresh_vendors()
+        self.statusBar().showMessage(f"{vendor.name} {action}d.", 4000)
 
     def _refresh_dashboard(self, invoices: list[Invoice]) -> None:
         while self.dashboard_layout.count() > 2:
@@ -787,6 +1077,7 @@ class MainWindow(QMainWindow):
     def _refresh_customers(self, invoices: list[Invoice]) -> None:
         customers: dict[str, dict[str, object]] = {}
         for invoice in invoices:
+            ## print(f"\n INVOICE : {invoice} \n\n, invoice.currency: {invoice.currency}, invoice.amount_due: {invoice.amount_due}")
             entry = customers.setdefault(
                 invoice.customer,
                 {
@@ -801,11 +1092,13 @@ class MainWindow(QMainWindow):
                 if isinstance(balances, defaultdict):
                     balances[invoice.currency] += invoice.amount_due
         self.customers_table.setRowCount(len(customers))
+        ## print(f"_refresh_customers:: '{customers}' \n\n")
         for row, (name, entry) in enumerate(sorted(customers.items())):
             self._set_cell(self.customers_table, row, 0, name)
             self._set_cell(self.customers_table, row, 1, str(entry["address"]))
             self._set_cell(self.customers_table, row, 2, str(entry["count"]))
             balances = entry["outstanding"]
+            ## print(balances, name, entry)
             balance_text = (
                 " · ".join(
                     money(amount, currency)
@@ -1029,7 +1322,7 @@ class MainWindow(QMainWindow):
 
     def _collect_invoice(self) -> Invoice:
         invoice = copy.deepcopy(self.current_invoice)
-        print("\n\n _collect_invoice", invoice.id)
+        ## print("\n\n _collect_invoice", invoice.id)
         invoice.customer = self.customer_edit.text().strip()
         invoice.address = self.address_edit.toPlainText().strip()
         invoice.email = self.email_edit.text().strip()
@@ -1148,7 +1441,7 @@ class MainWindow(QMainWindow):
 
     def _add_line(self) -> None:
         lines = self._read_lines()
-        print("_add_line::", lines)
+        ## print("_add_line::", lines)
         lines.append(InvoiceLine())
         self._populate_lines(lines)
         self._mark_dirty()

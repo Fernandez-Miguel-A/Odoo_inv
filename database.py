@@ -6,7 +6,10 @@ from datetime import date
 from pathlib import Path
 from typing import Iterator
 
-from models import Invoice, InvoiceLine, Payment
+if __package__:
+    from .models import Invoice, InvoiceLine, Payment, Vendor
+else:
+    from models import Invoice, InvoiceLine, Payment, Vendor
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -81,6 +84,20 @@ class InvoiceDatabase:
                 CREATE TABLE IF NOT EXISTS settings (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS vendors (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    contact_name TEXT NOT NULL DEFAULT '',
+                    email TEXT NOT NULL DEFAULT '',
+                    phone TEXT NOT NULL DEFAULT '',
+                    tax_id TEXT NOT NULL DEFAULT '',
+                    address TEXT NOT NULL DEFAULT '',
+                    payment_terms TEXT NOT NULL DEFAULT '30 Days',
+                    currency TEXT NOT NULL DEFAULT 'EUR',
+                    notes TEXT NOT NULL DEFAULT '',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
                 """
             )
@@ -404,3 +421,97 @@ class InvoiceDatabase:
                 """,
                 (key, value),
             )
+
+    def save_vendor(self, vendor: Vendor) -> Vendor:
+        name = vendor.name.strip()
+        if not name:
+            raise ValueError("A vendor name is required.")
+
+        values = (
+            name,
+            vendor.contact_name.strip(),
+            vendor.email.strip(),
+            vendor.phone.strip(),
+            vendor.tax_id.strip(),
+            vendor.address.strip(),
+            vendor.payment_terms,
+            vendor.currency,
+            vendor.notes.strip(),
+            int(vendor.is_active),
+        )
+        with self._connection() as connection:
+            if vendor.id is None:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO vendors (
+                        name, contact_name, email, phone, tax_id, address,
+                        payment_terms, currency, notes, is_active
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    values,
+                )
+                vendor.id = cursor.lastrowid
+            else:
+                cursor = connection.execute(
+                    """
+                    UPDATE vendors SET
+                        name = ?, contact_name = ?, email = ?, phone = ?,
+                        tax_id = ?, address = ?, payment_terms = ?, currency = ?,
+                        notes = ?, is_active = ?
+                    WHERE id = ?
+                    """,
+                    (*values, vendor.id),
+                )
+                if cursor.rowcount != 1:
+                    raise KeyError(f"Vendor {vendor.id} does not exist")
+        vendor.name = name
+        vendor.contact_name = values[1]
+        vendor.email = values[2]
+        vendor.phone = values[3]
+        vendor.tax_id = values[4]
+        vendor.address = values[5]
+        vendor.notes = values[8]
+        return vendor
+
+    def get_vendor(self, vendor_id: int) -> Vendor:
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM vendors WHERE id = ?", (vendor_id,)
+            ).fetchone()
+        if row is None:
+            raise KeyError(f"Vendor {vendor_id} does not exist")
+        return self._vendor_from_row(row)
+
+    def list_vendors(self, include_archived: bool = True) -> list[Vendor]:
+        query = "SELECT * FROM vendors"
+        if not include_archived:
+            query += " WHERE is_active = 1"
+        query += " ORDER BY name COLLATE NOCASE, id"
+        with self._connection() as connection:
+            rows = connection.execute(query).fetchall()
+        return [self._vendor_from_row(row) for row in rows]
+
+    def set_vendor_archived(self, vendor_id: int, archived: bool) -> None:
+        with self._connection() as connection:
+            cursor = connection.execute(
+                "UPDATE vendors SET is_active = ? WHERE id = ?",
+                (int(not archived), vendor_id),
+            )
+            if cursor.rowcount != 1:
+                raise KeyError(f"Vendor {vendor_id} does not exist")
+
+    @staticmethod
+    def _vendor_from_row(row: sqlite3.Row) -> Vendor:
+        return Vendor(
+            id=row["id"],
+            name=row["name"],
+            contact_name=row["contact_name"],
+            email=row["email"],
+            phone=row["phone"],
+            tax_id=row["tax_id"],
+            address=row["address"],
+            payment_terms=row["payment_terms"],
+            currency=row["currency"],
+            notes=row["notes"],
+            is_active=bool(row["is_active"]),
+        )

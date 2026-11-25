@@ -4,8 +4,12 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from database import InvoiceDatabase
-from main_window import MainWindow
+if __package__:
+    from .database import InvoiceDatabase
+    from .main_window import MainWindow
+else:
+    from database import InvoiceDatabase
+    from main_window import MainWindow
 
 
 def main() -> int:
