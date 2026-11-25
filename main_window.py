@@ -747,8 +747,8 @@ class MainWindow(QMainWindow):
         recent_label.setObjectName("sectionTitle")
         self.dashboard_layout.addWidget(recent_label)
         table = self._data_table(["Number", "Customer", "Date", "Status", "Total"])
-        table.setRowCount(min(8, len(invoices)))
-        for row, invoice in enumerate(invoices[:8]):
+        table.setRowCount(len(invoices))
+        for row, invoice in enumerate(invoices):
             self._set_cell(table, row, 0, invoice.number)
             self._set_cell(table, row, 1, invoice.customer)
             self._set_cell(table, row, 2, invoice.invoice_date)
