@@ -1008,7 +1008,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Could not update vendor", str(error))
             return
         self._refresh_vendors()
-        self.statusBar().showMessage(f"{vendor.name} {action}d.", 4000)
+        self.statusBar().showMessage(f"{vendor.name} {action}.", 4000)
 
     def _refresh_dashboard(self, invoices: list[Invoice]) -> None:
         while self.dashboard_layout.count() > 2:
