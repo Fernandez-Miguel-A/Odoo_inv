@@ -731,11 +731,25 @@ class MainWindow(QMainWindow):
         total_outstanding = sum(invoice.amount_due for invoice in posted)
         cards = QHBoxLayout()
         cards.addWidget(self._stat_card("Invoices", str(len(invoices))))
+        
         cards.addWidget(
             self._stat_card(
-                "Posted", str(sum(invoice.status in ("Posted", "Paid") for invoice in invoices))
+                "Posted", str(sum(invoice.status in ("Posted", ) for invoice in invoices))
             )
         )
+        cards.addWidget(
+            self._stat_card(
+                "Paid", str(sum(invoice.status in ("Paid", ) for invoice in invoices))
+            )
+        )
+        cards.addWidget(
+            self._stat_card(
+                "Draft", str(sum(invoice.status in ("Draft", ) for invoice in invoices))
+            )
+        )
+        ## "Posted", str(sum(invoice.status in ("Posted", "Paid") for invoice in invoices))
+        print(f"_refresh_dashboard:: {len(invoices)}\n\n")
+        
         currency = invoices[0].currency if invoices else "EUR"
         cards.addWidget(
             self._stat_card("Outstanding", money(total_outstanding, currency))
