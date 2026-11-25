@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 from typing import Iterator
 
-from Odoo_inv.models import Invoice, InvoiceLine, Payment
+from models import Invoice, InvoiceLine, Payment
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent

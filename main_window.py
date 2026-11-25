@@ -41,8 +41,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from Odoo_inv.database import InvoiceDatabase
-from Odoo_inv.models import Invoice, InvoiceLine
+from database import InvoiceDatabase
+from models import Invoice, InvoiceLine
 
 
 CURRENCY_SYMBOLS = {
@@ -103,9 +103,9 @@ class InvoiceStatusIndicator(QWidget):
         current_path.closeSubpath()
 
         draft_active = self._status == "Draft"
-        p = QPen("#3e41ff")
-        p.setWidth(2)
-        painter.setPen(p)
+        #p = QPen("#3e41ff")
+        #p.setWidth(2)
+        painter.setPen(QPen("#3e41ff"))
         painter.setBrush(active_fill if draft_active else inactive_fill)
         painter.drawPath(draft_path)
         painter.setBrush(inactive_fill if draft_active else active_fill)
