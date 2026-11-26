@@ -47,7 +47,7 @@ if __package__:
 else:
     from database import InvoiceDatabase
     from models import Invoice, InvoiceLine, Vendor
-    
+
 from main_definitions import *
 
 
@@ -245,7 +245,7 @@ class MainWindow(QMainWindow):
                 background: #ffffff;
                 border: 1px solid #cfd4dc;
                 border-radius: 3px;
-                padding: 6px;
+                padding: 3px;
                 selection-background-color: #714b67;
             }
             QLineEdit:read-only, QTextEdit:read-only, QDoubleSpinBox:disabled {
@@ -1196,11 +1196,11 @@ class MainWindow(QMainWindow):
             product_edit = QLineEdit(line.product)
             product_edit.setPlaceholderText("Product")
             product_edit.setFrame(False)
-            ##product_edit.setMinimumHeight(28)
+            product_edit.setMinimumHeight(25) ### aqui
             description_edit = QLineEdit(line.description)
             description_edit.setPlaceholderText("Description")
             description_edit.setFrame(False)
-            description_edit.setMinimumHeight(28)
+            description_edit.setMinimumHeight(25) ### aqui
             description_edit.setStyleSheet("font-style: italic; color: #707782;")
             product_layout.addWidget(product_edit)
             product_layout.addWidget(description_edit)
@@ -1221,7 +1221,7 @@ class MainWindow(QMainWindow):
                 editor.textEdited.connect(self._line_changed)
             for editor in (quantity, price, discount, tax):
                 editor.valueChanged.connect(self._line_changed)
-            self.lines_table.setRowHeight(row, 100)
+            self.lines_table.setRowHeight(row, 80) ### aqui
         self._set_invoice_editable(self.current_invoice.status == "Draft")
 
     @staticmethod
