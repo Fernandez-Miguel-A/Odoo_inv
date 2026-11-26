@@ -343,11 +343,11 @@ class MainWindow(QMainWindow):
         heading.addWidget(self.record_position)
         self.previous_button = QPushButton("‹")
         self.previous_button.setFixedWidth(34)
-        self.previous_button.clicked.connect(lambda: self._move_invoice(+1))
+        self.previous_button.clicked.connect(lambda: self._move_invoice(-1))
         heading.addWidget(self.previous_button)
         self.next_button = QPushButton("›")
         self.next_button.setFixedWidth(34)
-        self.next_button.clicked.connect(lambda: self._move_invoice(-1))
+        self.next_button.clicked.connect(lambda: self._move_invoice(+1))
         heading.addWidget(self.next_button)
         page_layout.addLayout(heading)
 
@@ -1352,12 +1352,14 @@ class MainWindow(QMainWindow):
         if self.current_invoice.id in ids:
             index = ids.index(self.current_invoice.id)
             self.record_position.setText(f"{index + 1} / {len(ids)}")
-            self.previous_button.setEnabled(index < len(ids) - 1)
-            self.next_button.setEnabled(index > 0)
+            self.previous_button.setEnabled(index > 0)
+            self.next_button.setEnabled(index < len(ids) - 1)
+            ## print("_update_record_navigation", index, index < len(ids) - 1, index > 0)
         else:
             self.record_position.setText("New")
             self.previous_button.setEnabled(False)
             self.next_button.setEnabled(False)
+            ## print("::_update_record_navigation::")
 
     def _confirm_pending_changes(self) -> bool:
         if not self._dirty:

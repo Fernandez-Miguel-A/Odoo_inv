@@ -249,7 +249,7 @@ class InvoiceDatabase:
     def list_invoices(self) -> list[Invoice]:
         with self._connection() as connection:
             rows = connection.execute(
-                "SELECT * FROM invoices ORDER BY id DESC"
+                "SELECT * FROM invoices ORDER BY id ASC"
             ).fetchall()
             line_rows = connection.execute(
                 "SELECT * FROM invoice_lines ORDER BY invoice_id, position"
