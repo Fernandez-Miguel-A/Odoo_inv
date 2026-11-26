@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from main_definitions import *
+
 
 @dataclass(slots=True)
 class InvoiceLine:
@@ -35,7 +37,7 @@ class Invoice:
     invoice_date: str = ""
     due_date: str = ""
     payment_terms: str = "30 Days"
-    currency: str = "EUR"
+    currency: str = default_Currency
     status: str = "Draft"
     reference: str = ""
     notes: str = ""
@@ -84,6 +86,6 @@ class Vendor:
     tax_id: str = ""
     address: str = ""
     payment_terms: str = "30 Days"
-    currency: str = "EUR"
+    currency: str = default_Currency
     notes: str = ""
     is_active: bool = True

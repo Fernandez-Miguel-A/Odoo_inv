@@ -47,21 +47,8 @@ if __package__:
 else:
     from database import InvoiceDatabase
     from models import Invoice, InvoiceLine, Vendor
-
-
-CURRENCY_SYMBOLS = {
-    "EUR": ["€", 1.0],
-    "USD": ["$", 1.091],
-    "GBP": ["£", 0.8367],
-    "ARGs": ["$", 1724.0],
-}
-TERM_DAYS = {"Immediate": 0, "15 Days": 15, "30 Days": 30, "45 Days": 45}
-
-
-def money(amount: float, currency: str) -> str:
-    symbol, factor = CURRENCY_SYMBOLS.get(currency, currency)
-    prefix = "-" if amount < 0 else ""
-    return f"{prefix}{symbol} {abs(amount*factor):,.2f}"
+    
+from main_definitions import *
 
 
 class InvoiceStatusIndicator(QWidget):
@@ -1040,7 +1027,7 @@ class MainWindow(QMainWindow):
         ## "Posted", str(sum(invoice.status in ("Posted", "Paid") for invoice in invoices))
         print(f"_refresh_dashboard:: {len(invoices)}\n\n")
         
-        currency = invoices[0].currency if invoices else "EUR"
+        currency = invoices[0].currency if invoices else default_Currency
         cards.addWidget(
             self._stat_card("Outstanding", money(total_outstanding, currency))
         )
@@ -1105,7 +1092,7 @@ class MainWindow(QMainWindow):
                     for currency, amount in sorted(balances.items())
                 )
                 if isinstance(balances, defaultdict) and balances
-                else money(0, "EUR")
+                else money(0, default_Currency)
             )
             self._set_cell(self.customers_table, row, 3, balance_text)
 
@@ -1117,7 +1104,7 @@ class MainWindow(QMainWindow):
         self.reporting_table.setRowCount(len(statuses))
         for row, status in enumerate(statuses):
             entries = groups[status]
-            currency = entries[0].currency if entries else "EUR"
+            currency = entries[0].currency if entries else default_Currency
             self._set_cell(self.reporting_table, row, 0, status)
             self._set_cell(self.reporting_table, row, 1, str(len(entries)))
             self._set_cell(
@@ -1420,7 +1407,7 @@ class MainWindow(QMainWindow):
                 invoice_date=today.toString("yyyy-MM-dd"),
                 due_date=due.toString("yyyy-MM-dd"),
                 payment_terms="30 Days",
-                currency="EUR",
+                currency=default_Currency,
                 status="Draft",
                 lines=[InvoiceLine()],
             )
