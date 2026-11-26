@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QDate, QDateTime
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QWidget,
+
 )
 
 
@@ -435,7 +436,8 @@ class DashboardPage(QWidget):
             self.low_table.setItem(row_index, 2, stock_item)
         self.activity_list.clear()
         for item in self.database.recent_activity():
-            date = str(item["created_at"])[:16]
+            value = str(item["created_at"])
+            date = QDateTime.fromString(value, "yyyy-MM-dd hh:mm:ss").toString("d-M-yyyy hh:mm")
             name = item["product_name"] or "Producto eliminado"
             self.activity_list.addItem(f'{date}  ·  {item["message"]}\n{name}')
         if not self.activity_list.count():
@@ -686,7 +688,10 @@ class ProductPage(QWidget):
             (product_id,),
         ).fetchall()
         for item in activities:
-            self.activity_list.addItem(f'{str(item["created_at"])[:16]}  ·  {item["message"]}')
+            value = str(item["created_at"])
+            datetime = QDateTime.fromString(value, "yyyy-MM-dd hh:mm:ss")
+            ## print(f"load_product: '{value}', '{datetime.toString("d-M-yyyy hh:mm")}'")
+            self.activity_list.addItem(f'{datetime.toString("d-M-yyyy hh:mm")}  ·  {item["message"]}')
         if not activities:
             self.activity_list.addItem("Sin actividad registrada.")
 
