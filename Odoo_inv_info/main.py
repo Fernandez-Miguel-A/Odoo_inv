@@ -354,6 +354,7 @@ def set_table_defaults(table: QTableWidget) -> None:
 
 
 def add_form_row(layout: QFormLayout, label: str, widget: QWidget) -> None:
+    widget.setMinimumHeight(20)
     layout.addRow(label, widget)
 
 
@@ -541,6 +542,8 @@ class ProductPage(QWidget):
         self.sales_tax = self._percentage_input()
         self.cost = self._money_input()
         self.purchase_tax = self._percentage_input()
+
+        ## layout.setVerticalSpacing(10)
         add_form_row(layout, "Nombre del producto", self.name_input)
         add_form_row(layout, "Referencia interna", self.reference_input)
         add_form_row(layout, "Tipo de producto", self.type_combo)
@@ -1188,7 +1191,7 @@ def apply_styles(app: QApplication) -> None:
             background: #ffffff;
             border: 1px solid #dce3e6;
             border-radius: 5px;
-            padding: 7px 9px;
+            padding: 3px 9px;
             selection-background-color: #168a75;
         }
         QLineEdit:focus, QComboBox:focus, QDoubleSpinBox:focus,
