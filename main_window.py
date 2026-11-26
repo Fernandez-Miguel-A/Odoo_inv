@@ -356,7 +356,7 @@ class MainWindow(QMainWindow):
         action_row = QHBoxLayout(action_bar)
         action_row.setContentsMargins(8, 4, 8, 4)
         action_row.setSpacing(6)
-        self.print_send_button = QPushButton("Print & Send")
+        self.print_send_button = QPushButton("Print && Send") ## Escapando caracter '&'
         self.print_send_button.setObjectName("primaryButton")
         self.print_send_button.setToolTip(
             "Post the invoice and open a print preview. Save it as a PDF to share."
@@ -1181,7 +1181,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _to_qdate(value: str) -> QDate:
-        result = QDate.fromString(value, "yyyy-MM-dd")
+        result = QDate.fromString(value, "d-M-yyyy") # "yyyy-MM-dd"
         return result if result.isValid() else QDate.currentDate()
 
     def _populate_lines(self, lines: list[InvoiceLine]) -> None:
@@ -1313,8 +1313,8 @@ class MainWindow(QMainWindow):
         invoice.customer = self.customer_edit.text().strip()
         invoice.address = self.address_edit.toPlainText().strip()
         invoice.email = self.email_edit.text().strip()
-        invoice.invoice_date = self.invoice_date_edit.date().toString("yyyy-MM-dd")
-        invoice.due_date = self.due_date_edit.date().toString("yyyy-MM-dd")
+        invoice.invoice_date = self.invoice_date_edit.date().toString("d-M-yyyy")
+        invoice.due_date = self.due_date_edit.date().toString("d-M-yyyy")
         invoice.payment_terms = self.terms_combo.currentText()
         invoice.currency = self.currency_combo.currentText()
         invoice.reference = self.reference_edit.text().strip()
@@ -1406,8 +1406,8 @@ class MainWindow(QMainWindow):
         due = today.addDays(30)
         self._show_invoice(
             Invoice(
-                invoice_date=today.toString("yyyy-MM-dd"),
-                due_date=due.toString("yyyy-MM-dd"),
+                invoice_date=today.toString("d-M-yyyy"),
+                due_date=due.toString("d-M-yyyy"),
                 payment_terms="30 Days",
                 currency=default_Currency,
                 status="Draft",
