@@ -49,6 +49,8 @@ else:
     from models import Invoice, InvoiceLine, Vendor
 
 from main_definitions import *
+from database_v1 import Database as InventoryDatabase
+from pages import DashboardPage, ProductPage, SupplierPage
 
 
 class InvoiceStatusIndicator(QWidget):
@@ -137,7 +139,11 @@ class MainWindow(QMainWindow):
             "Vendors",
             "Reporting",
             "Configuration",
+            "Inicio",
+            "Productos",
+            "Proveedores",
         ]
+        self.inventory_database = InventoryDatabase()
         self.setWindowTitle("Odoo Inv | Invoicing")
         self.resize(1240, 850)
         self.setMinimumSize(980, 680)
@@ -271,6 +277,168 @@ class MainWindow(QMainWindow):
             QLabel#muted { color: #707782; }
             QLabel#totalLabel { font-size: 17px; font-weight: 700; }
             QLabel#statValue { color: #714b67; font-size: 23px; font-weight: 700; }
+            QWidget#inventoryInicio QLabel#pageTitle {
+                font-size: 24px;
+                font-weight: 700;
+                color: #263648;
+            }
+            QWidget#inventoryInicio QLabel#mutedText {
+                color: #7d8992;
+            }
+            QWidget#inventoryInicio QFrame#metricCard {
+                background: #ffffff;
+                border: 1px solid #e2e8eb;
+                border-radius: 9px;
+            }
+            QWidget#inventoryInicio QLabel#metricValue {
+                font-size: 24px;
+                font-weight: 700;
+                color: #263648;
+            }
+            QWidget#inventoryInicio QGroupBox {
+                background: #ffffff;
+                border: 1px solid #e2e8eb;
+                border-radius: 9px;
+                margin-top: 12px;
+                padding: 14px 12px 12px;
+                font-weight: 600;
+            }
+            QWidget#inventoryInicio QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 5px;
+                color: #52616d;
+            }
+            QWidget#inventoryInicio QListWidget {
+                background: #ffffff;
+                alternate-background-color: #f8fafb;
+                border: 1px solid #e2e8eb;
+                border-radius: 7px;
+                padding: 4px;
+                outline: 0;
+            }
+            QWidget#inventoryInicio QListWidget::item {
+                padding: 7px 5px;
+                border-bottom: 1px solid #eff2f3;
+            }
+            QWidget#inventoryInicio QListWidget::item:selected {
+                color: #1d574d;
+                background: #e3f2ee;
+            }
+            QWidget#inventoryProveedores QLabel#pageTitle {
+                font-size: 24px;
+                font-weight: 700;
+                color: #263648;
+            }
+            QWidget#inventoryProductos QLabel#pageTitle {
+                font-size: 24px;
+                font-weight: 700;
+                color: #263648;
+            }
+            QWidget#inventoryProductos QLabel#sectionTitle {
+                font-size: 20px;
+                font-weight: 600;
+                color: #263648;
+                padding: 3px 2px 6px;
+            }
+            QWidget#inventoryProductos QLabel#mutedText {
+                color: #7d8992;
+            }
+            QWidget#inventoryProductos QPushButton[kind="primary"] {
+                color: #ffffff;
+                background: #765268;
+                border: 1px solid #765268;
+            }
+            QWidget#inventoryProductos QPushButton[kind="primary"]:hover {
+                background: #644357;
+            }
+            QWidget#inventoryProductos QPushButton[kind="danger"] {
+                color: #a94646;
+            }
+            QWidget#inventoryProductos QPushButton[kind="danger"]:hover {
+                background: #fff1f0;
+                border: 1px solid #e8b7b2;
+            }
+            QWidget#inventoryProductos QLineEdit,
+            QWidget#inventoryProductos QComboBox,
+            QWidget#inventoryProductos QDoubleSpinBox,
+            QWidget#inventoryProductos QSpinBox,
+            QWidget#inventoryProductos QTextEdit {
+                background: #ffffff;
+                border: 1px solid #dce3e6;
+                border-radius: 5px;
+                selection-background-color: #168a75;
+                padding: 3px 9px;
+            }
+            QWidget#inventoryProductos QLineEdit:focus,
+            QWidget#inventoryProductos QComboBox:focus,
+            QWidget#inventoryProductos QDoubleSpinBox:focus,
+            QWidget#inventoryProductos QSpinBox:focus,
+            QWidget#inventoryProductos QTextEdit:focus {
+                border: 1px solid #168a75;
+            }
+            QWidget#inventoryProductos QTabWidget::pane {
+                background: #ffffff;
+                border: 1px solid #e2e8eb;
+                border-radius: 7px;
+                top: -1px;
+            }
+            QWidget#inventoryProductos QTabBar::tab {
+                background: #eef1f2;
+                color: #586671;
+                border: 1px solid #e2e8eb;
+                padding: 9px 13px;
+                margin-right: 3px;
+            }
+            QWidget#inventoryProductos QTabBar::tab:selected {
+                color: #263648;
+                background: #ffffff;
+                border-bottom-color: #ffffff;
+            }
+            QWidget#inventoryProductos QTableWidget,
+            QWidget#inventoryProductos QListWidget {
+                background: #ffffff;
+                alternate-background-color: #f8fafb;
+                border: 1px solid #e2e8eb;
+                border-radius: 7px;
+                padding: 4px;
+                outline: 0;
+            }
+            QWidget#inventoryProductos QHeaderView::section {
+                background: #f3f6f7;
+                color: #60707c;
+                border: none;
+                border-bottom: 1px solid #e2e8eb;
+                padding: 9px 7px;
+                font-weight: 600;
+            }
+            QWidget#inventoryProductos QTableWidget::item {
+                padding: 6px;
+                border: none;
+            }
+            QWidget#inventoryProductos QTableWidget::item:selected,
+            QWidget#inventoryProductos QListWidget::item:selected {
+                color: #1d574d;
+                background: #e3f2ee;
+            }
+            QWidget#inventoryProductos QListWidget::item {
+                padding: 7px 5px;
+                border-bottom: 1px solid #eff2f3;
+            }
+            QWidget#inventoryProductos QGroupBox {
+                background: #ffffff;
+                border: 1px solid #e2e8eb;
+                border-radius: 9px;
+                margin-top: 12px;
+                padding: 14px 12px 12px;
+                font-weight: 600;
+            }
+            QWidget#inventoryProductos QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 5px;
+                color: #52616d;
+            }
         """
 
     def _build_ui(self) -> None:
@@ -310,6 +478,9 @@ class MainWindow(QMainWindow):
         self._build_vendors_page()
         self._build_reporting_page()
         self._build_configuration_page()
+        self._build_inicio_page()
+        self._build_productos_page()
+        self._build_proveedores_page()
         layout.addWidget(self.pages, 1)
 
         self.setCentralWidget(root)
@@ -738,6 +909,43 @@ class MainWindow(QMainWindow):
         layout.addStretch(1)
         self.pages.addWidget(page)
 
+    def _build_inicio_page(self) -> None:
+        self.inicio = DashboardPage(self.inventory_database)
+        self.inicio.setObjectName("inventoryInicio")
+        self.pages.addWidget(self.inicio)
+
+    def _build_productos_page(self) -> None:
+        self.productos = ProductPage(
+            self.inventory_database,
+            self._notify_inventory,
+        )
+        self.productos.setObjectName("inventoryProductos")
+        self.pages.addWidget(self.productos)
+
+    def _build_proveedores_page(self) -> None:
+        self.proveedores = SupplierPage(
+            self.inventory_database,
+            self._refresh_inventory_supplier_data,
+            self._notify_inventory,
+        )
+        self.proveedores.setObjectName("inventoryProveedores")
+        self.pages.addWidget(self.proveedores)
+
+    def _refresh_inventory_supplier_data(self) -> None:
+        selected_id = self.productos.supplier_combo.currentData()
+        self.productos.refresh_suppliers(selected_id)
+        self.productos.refresh_table(self.productos.current_id)
+        self.inicio.refresh()
+
+    def _notify_inventory(self, message: str, error: bool = False) -> None:
+        self.statusBar().showMessage(message, 6000)
+        if error:
+            QMessageBox.critical(self, "Error", message)
+
+    def closeEvent(self, event) -> None:
+        self.inventory_database.close()
+        super().closeEvent(event)
+
     @staticmethod
     def _page_container(title: str, subtitle: str) -> tuple[QWidget, QVBoxLayout]:
         page = QWidget()
@@ -786,6 +994,13 @@ class MainWindow(QMainWindow):
         self._refresh_customers(invoices)
         self._refresh_reporting(invoices)
         self._refresh_vendors()
+        if hasattr(self, "inicio"):
+            self.inicio.refresh()
+        if hasattr(self, "productos"):
+            self.productos.refresh_suppliers()
+            self.productos.refresh_table(self.productos.current_id)
+        if hasattr(self, "proveedores"):
+            self.proveedores.refresh_table(self.proveedores.current_id)
 
     def _refresh_vendors(self, *_args: object) -> None:
         vendors = self.database.list_vendors()
