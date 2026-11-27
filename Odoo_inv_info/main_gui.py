@@ -195,7 +195,7 @@ def apply_styles(app: QApplication) -> None:
             background: #ffffff;
             border: 1px solid #dce3e6;
             border-radius: 5px;
-            padding: 3px 9px;
+            padding: 1px 9px;
             selection-background-color: #168a75;
         }
         QLineEdit:focus, QComboBox:focus, QDoubleSpinBox:focus,
