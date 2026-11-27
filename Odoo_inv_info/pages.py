@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 
 )
 
+APP_DIR = Path(__file__).resolve().parent
 
 def make_button(text: str, kind: str = "secondary") -> QPushButton:
     button = QPushButton(text)
