@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (
 
 import os, sys
 from main_gui import MainWindow, apply_styles
-from database import Database
+from database_v1 import Database
 
 
 def main() -> int:

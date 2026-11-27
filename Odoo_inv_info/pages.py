@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from database import Database
+from database_v1 import Database
 
 from PySide6.QtCore import Qt, QDate, QDateTime
 from PySide6.QtWidgets import (

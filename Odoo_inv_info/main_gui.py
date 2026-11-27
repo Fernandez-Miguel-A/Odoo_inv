@@ -36,7 +36,7 @@ from PySide6.QtWidgets import (
 )
 
 
-from database import Database
+from database_v1 import Database
 
 from pages import DashboardPage, ProductPage, SupplierPage
 
