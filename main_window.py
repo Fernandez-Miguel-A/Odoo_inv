@@ -325,11 +325,6 @@ class MainWindow(QMainWindow):
                 color: #1d574d;
                 background: #e3f2ee;
             }
-            QWidget#inventoryProveedores QLabel#pageTitle {
-                font-size: 24px;
-                font-weight: 700;
-                color: #263648;
-            }
             QWidget#inventoryProductos QLabel#pageTitle {
                 font-size: 24px;
                 font-weight: 700;
@@ -438,6 +433,64 @@ class MainWindow(QMainWindow):
                 left: 12px;
                 padding: 0 5px;
                 color: #52616d;
+            }
+            QWidget#inventoryProveedores QLabel#pageTitle {
+                font-size: 24px;
+                font-weight: 700;
+                color: #263648;
+            }
+            QWidget#inventoryProveedores QPushButton[kind="primary"] {
+                color: #ffffff;
+                background: #765268;
+                border: 1px solid #765268;
+            }
+            QWidget#inventoryProveedores QPushButton[kind="primary"]:hover {
+                background: #644357;
+            }
+            QWidget#inventoryProveedores QPushButton[kind="danger"] {
+                color: #a94646;
+            }
+            QWidget#inventoryProveedores QPushButton[kind="danger"]:hover {
+                background: #fff1f0;
+                border: 1px solid #e8b7b2;
+            }
+            QWidget#inventoryProveedores QLineEdit,
+            QWidget#inventoryProveedores QTextEdit {
+                background: #ffffff;
+                border: 1px solid #dce3e6;
+                border-radius: 5px;
+                selection-background-color: #168a75;
+                padding: 3px 9px;
+            }
+            QWidget#inventoryProveedores QLineEdit:focus,
+            QWidget#inventoryProveedores QTextEdit:focus {
+                border: 1px solid #168a75;
+            }
+            QWidget#inventoryProveedores QTableWidget,
+            QWidget#inventoryProveedores QListWidget {
+                background: #ffffff;
+                alternate-background-color: #f8fafb;
+                border: 1px solid #e2e8eb;
+                border-radius: 7px;
+                padding: 4px;
+                outline: 0;
+            }
+            QWidget#inventoryProveedores QHeaderView::section {
+                background: #f3f6f7;
+                color: #60707c;
+                border: none;
+                border-bottom: 1px solid #e2e8eb;
+                padding: 9px 7px;
+                font-weight: 600;
+            }
+            QWidget#inventoryProveedores QTableWidget::item {
+                padding: 6px;
+                border: none;
+            }
+            QWidget#inventoryProveedores QTableWidget::item:selected,
+            QWidget#inventoryProveedores QListWidget::item:selected {
+                color: #1d574d;
+                background: #e3f2ee;
             }
         """
 
